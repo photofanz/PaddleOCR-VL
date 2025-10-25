@@ -1,6 +1,6 @@
 """
-簡化的 OCR 服務
-專注於處理 PaddleOCR 3.3.0 的標準輸出格式
+Simplified OCR Service
+Focused on handling PaddleOCR 3.3.0 standard output format
 """
 
 import paddleocr
@@ -14,21 +14,21 @@ logger = logging.getLogger(__name__)
 
 
 class SimpleOCRService:
-    """簡化的 OCR 服務類別"""
+    """Simplified OCR service class"""
     
     def __init__(self, lang: str = 'en', use_gpu: bool = False):
         """
-        初始化 OCR 服務
+        Initialize OCR service
         
         Args:
-            lang: 語言代碼 (en, ch_tra, ch_sim, etc.)
-            use_gpu: 是否使用 GPU/MPS 加速（預設關閉以確保穩定性）
+            lang: Language code (en, ch_tra, ch_sim, etc.)
+            use_gpu: Whether to use GPU/MPS acceleration (disabled by default for stability)
         """
-        # 語言代碼映射（PaddleOCR 3.3.0 版本）
+        # Language code mapping (PaddleOCR 3.3.0 version)
         self.lang_mapping = {
             'en': 'en',
-            'ch_tra': 'ch',  # 繁體中文
-            'ch_sim': 'ch',  # 簡體中文（都使用 ch）
+            'ch_tra': 'ch',  # Traditional Chinese
+            'ch_sim': 'ch',  # Simplified Chinese (both use ch)
             'japan': 'japan',
             'korean': 'korean',
             'french': 'french',

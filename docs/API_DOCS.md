@@ -18,7 +18,7 @@ PaddleOCR-VL Web Application REST API 完整文件。
 ### Base URL
 
 ```
-http://localhost:8000
+http://localhost:8001
 ```
 
 ### 內容類型
@@ -50,7 +50,7 @@ http://localhost:8000
 
 ```http
 GET /api/status HTTP/1.1
-Host: localhost:8000
+Host: localhost:8001
 ```
 
 **回應**
@@ -81,7 +81,7 @@ Host: localhost:8000
 
 ```http
 POST /api/upload HTTP/1.1
-Host: localhost:8000
+Host: localhost:8001
 Content-Type: multipart/form-data
 
 file: <binary>
@@ -124,7 +124,7 @@ file: <binary>
 
 ```http
 POST /api/process-ocr HTTP/1.1
-Host: localhost:8000
+Host: localhost:8001
 Content-Type: application/json
 
 {
@@ -193,7 +193,7 @@ Content-Type: application/json
 
 ```http
 POST /api/enhance-with-gemini HTTP/1.1
-Host: localhost:8000
+Host: localhost:8001
 Content-Type: application/json
 
 {
@@ -250,7 +250,7 @@ Content-Type: application/json
 
 ```http
 POST /api/generate-markdown HTTP/1.1
-Host: localhost:8000
+Host: localhost:8001
 Content-Type: application/json
 
 {
@@ -322,7 +322,7 @@ Content-Type: application/json
 
 ```http
 GET /api/download/550e8400-e29b-41d4-a716-446655440000/md?filename=document HTTP/1.1
-Host: localhost:8000
+Host: localhost:8001
 ```
 
 **路徑參數**
@@ -360,7 +360,7 @@ Host: localhost:8000
 
 ```http
 DELETE /api/cleanup/550e8400-e29b-41d4-a716-446655440000 HTTP/1.1
-Host: localhost:8000
+Host: localhost:8001
 ```
 
 **回應**
@@ -469,7 +469,7 @@ interface GeminiResponse {
 import requests
 import json
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8001"
 
 # 1. 上傳檔案
 with open("document.pdf", "rb") as f:
@@ -530,11 +530,11 @@ print("檔案已清理")
 
 ```bash
 # 1. 上傳檔案
-curl -X POST http://localhost:8000/api/upload \
+curl -X POST http://localhost:8001/api/upload \
   -F "file=@document.pdf"
 
 # 2. OCR 辨識
-curl -X POST http://localhost:8000/api/process-ocr \
+curl -X POST http://localhost:8001/api/process-ocr \
   -H "Content-Type: application/json" \
   -d '{
     "file_id": "YOUR_FILE_ID",
@@ -543,14 +543,14 @@ curl -X POST http://localhost:8000/api/process-ocr \
   }'
 
 # 3. 下載
-curl -O http://localhost:8000/api/download/YOUR_FILE_ID/md?filename=document
+curl -O http://localhost:8001/api/download/YOUR_FILE_ID/md?filename=document
 ```
 
 ---
 
 ## 互動式文件
 
-啟動應用後，訪問 http://localhost:8000/docs 可查看自動生成的互動式 API 文件（Swagger UI），支援線上測試所有 API。
+啟動應用後，訪問 http://localhost:8001/docs 可查看自動生成的互動式 API 文件（Swagger UI），支援線上測試所有 API。
 
 ---
 

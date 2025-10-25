@@ -97,8 +97,8 @@ pip install -r requirements.txt
 
 此步驟將安裝：
 
-- **PaddlePaddle**：深度學習框架（包含 MPS 支援）
-- **PaddleOCR**：OCR 工具套件
+- **PaddlePaddle**：深度學習框架（CPU 模式）
+- **PaddleOCR 3.3.0**：OCR 工具套件
 - **FastAPI**：Web 框架
 - **PyMuPDF**：PDF 處理
 - **Google Generative AI**：Gemini API 客戶端
@@ -132,7 +132,7 @@ MAX_UPLOAD_SIZE=52428800  # 50MB
 
 # OCR 設定
 DEFAULT_OCR_LANGUAGE=en
-USE_GPU=True  # 啟用 MPS 加速
+USE_GPU=False  # 使用 CPU 模式確保穩定性
 
 # Gemini 設定
 GEMINI_MODEL=gemini-2.0-flash-exp
@@ -180,7 +180,7 @@ Gemini API 提供慷慨的免費額度：
 
 ## 驗證安裝
 
-### 驗證 PaddleOCR 與 MPS 加速
+### 驗證 PaddleOCR 與 CPU 模式
 
 執行驗證腳本：
 
@@ -192,7 +192,7 @@ python verify_paddle_mps.py
 
 ```
 ============================================================
-  PaddleOCR MPS 驗證腳本
+  PaddleOCR CPU 驗證腳本
   Apple Silicon (M3 Max) 測試
 ============================================================
 
@@ -207,7 +207,7 @@ python verify_paddle_mps.py
 ============================================================
 ✓ PaddlePaddle 已安裝
   版本: 3.0.0
-  ℹ CUDA 支援: 否（macOS 使用 MPS）
+  ℹ 使用 CPU 模式（確保最佳穩定性）
 
 ============================================================
   3. 創建測試圖像
@@ -230,28 +230,28 @@ python verify_paddle_mps.py
   4. [0.95] This is a test for OCR recognition
 
 ============================================================
-  5. 測試 OCR (GPU/MPS 模式, 語言: en)
+  5. 測試 OCR (CPU 模式, 語言: ch)
 ============================================================
-正在初始化 PaddleOCR (GPU/MPS)...
+正在初始化 PaddleOCR (CPU)...
 ✓ 初始化完成，耗時 2.45 秒
-  ℹ 在 macOS 上，use_gpu=True 會嘗試使用 MPS 加速
+  ℹ 使用 CPU 模式確保穩定性
 正在處理圖像: test_image.png
-✓ OCR 完成，耗時 0.95 秒
+✓ OCR 完成，耗時 1.95 秒
 
 辨識結果:
-  1. [0.98] PaddleOCR Test Image
+  1. [0.98] PaddleOCR 測試圖像
   2. [0.96] Apple M3 Max
   3. [0.97] MacBook Pro 2024
-  4. [0.95] This is a test for OCR recognition
+  4. [0.95] 這是 OCR 辨識測試
 
 ============================================================
 測試總結
 ============================================================
-CPU 模式: ✓ 成功
+CPU 模式 (英文): ✓ 成功
   處理時間: 1.87 秒
-GPU/MPS 模式: ✓ 成功
-  處理時間: 0.95 秒
-  加速比: 1.97x
+CPU 模式 (中文): ✓ 成功
+  處理時間: 1.95 秒
+  穩定性: 優秀
 
 ============================================================
 
@@ -275,26 +275,26 @@ python run.py
 PaddleOCR-VL Web Application
 ============================================================
 主機: 0.0.0.0
-埠號: 8000
+埠號: 8001
 除錯模式: True
 ============================================================
 
-🌐 應用網址: http://localhost:8000
-📖 部署指南: http://localhost:8000/guide
-📊 API 文件: http://localhost:8000/docs
-🔍 系統狀態: http://localhost:8000/api/status
+🌐 應用網址: http://localhost:8001
+📖 部署指南: http://localhost:8001/guide
+📊 API 文件: http://localhost:8001/docs
+🔍 系統狀態: http://localhost:8001/api/status
 
 按 Ctrl+C 停止伺服器
 
 ============================================================
 INFO:     Will watch for changes in these directories: ['/path/to/PaddleOCR-VL']
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
 INFO:     Started reloader process [12345] using StatReload
 ============================================================
   PaddleOCR-VL Web Application 啟動中...
   版本: 1.0.0
 ============================================================
-✓ OCR 服務已初始化 (語言: en, GPU: True)
+✓ OCR 服務已初始化 (語言: en, CPU: True)
 ✓ Gemini API 已就緒 (模型: gemini-2.0-flash-exp)
 ============================================================
 ✓ 應用啟動完成
@@ -303,10 +303,10 @@ INFO:     Started reloader process [12345] using StatReload
 
 開啟瀏覽器訪問：
 
-- **主應用**：http://localhost:8000
-- **部署指南**：http://localhost:8000/guide
-- **API 文件**：http://localhost:8000/docs
-- **系統狀態**：http://localhost:8000/api/status
+- **主應用**：http://localhost:8001
+- **部署指南**：http://localhost:8001/guide
+- **API 文件**：http://localhost:8001/docs
+- **系統狀態**：http://localhost:8001/api/status
 
 ---
 
@@ -354,11 +354,11 @@ pip install paddlepaddle --no-cache-dir
 
 ### Q4: 在 Intel Mac 上能否使用？
 
-**A4:** 可以！但 MPS 加速僅適用於 Apple Silicon。在 Intel Mac 上：
+**A4:** 可以！本應用使用 CPU 模式，在 Intel Mac 上也能正常運行：
 
-1. 將 `.env` 中的 `USE_GPU` 設為 `False`
-2. 處理速度會較慢（使用 CPU）
-3. 其他功能完全相同
+1. 確保 `.env` 中的 `USE_GPU` 設為 `False`
+2. 處理速度與 Apple Silicon 相近
+3. 所有功能完全相同
 
 ### Q5: 如何更新至最新版本？
 
@@ -378,19 +378,19 @@ python run.py
 
 ### Q6: 應用無法啟動，顯示埠號已被佔用
 
-**A6:** 8000 埠被其他程式佔用。解決方法：
+**A6:** 8001 埠被其他程式佔用。解決方法：
 
 方法 1：修改 `.env` 檔案中的 `PORT`
 
 ```ini
-PORT=8001  # 改為其他埠號
+PORT=8002  # 改為其他埠號
 ```
 
-方法 2：終止佔用 8000 埠的程式
+方法 2：終止佔用 8001 埠的程式
 
 ```bash
 # 找出佔用的程式
-lsof -i :8000
+lsof -i :8001
 
 # 終止該程式（替換 PID）
 kill -9 <PID>

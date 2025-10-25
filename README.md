@@ -17,7 +17,7 @@
 
 ## 📖 專案簡介
 
-PaddleOCR-VL Web Application 是一個結合本地 OCR 技術與雲端 AI 能力的文件處理系統。它在 Apple Silicon (M3 Max) 上利用 MPS 加速進行高速文字辨識，並透過 Gemini API 進行智能文字結構化與分析。
+PaddleOCR-VL Web Application 是一個結合本地 OCR 技術與雲端 AI 能力的文件處理系統。它在 Apple Silicon (M3 Max) 上使用 CPU 模式進行穩定可靠的文字辨識，並透過 Gemini API 進行智能文字結構化與分析。
 
 ### 🎯 設計理念
 
@@ -32,7 +32,7 @@ PaddleOCR-VL Web Application 是一個結合本地 OCR 技術與雲端 AI 能力
 
 - 📄 **多格式支援**：PDF、PNG、JPG、JPEG 格式檔案上傳
 - 🌍 **多語言辨識**：支援英文、繁體中文、簡體中文、日文、韓文等
-- ⚡ **MPS 加速**：在 Apple Silicon 上使用 Metal Performance Shaders 加速
+- ⚡ **穩定處理**：使用 CPU 模式確保最佳兼容性和穩定性
 - 🤖 **AI 智能處理**：
   - 結構化為 Markdown
   - 內容摘要生成
@@ -64,7 +64,7 @@ PaddleOCR-VL Web Application 是一個結合本地 OCR 技術與雲端 AI 能力
 │         │                  │                                │
 │  ┌──────▼───────┐  ┌──────▼───────┐                        │
 │  │ PaddleOCR    │  │  Gemini API  │                        │
-│  │ (Local MPS)  │  │   (Cloud)    │                        │
+│  │ (Local CPU)  │  │   (Cloud)    │                        │
 │  └──────────────┘  └──────────────┘                        │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -74,7 +74,7 @@ PaddleOCR-VL Web Application 是一個結合本地 OCR 技術與雲端 AI 能力
 **後端：**
 - Python 3.12
 - FastAPI（Web 框架）
-- PaddlePaddle + PaddleOCR（OCR 引擎）
+- PaddlePaddle + PaddleOCR 3.3.0（OCR 引擎，CPU 模式）
 - PyMuPDF（PDF 處理）
 - Google Generative AI（Gemini API）
 
@@ -111,7 +111,7 @@ cp .env.example .env
 python run.py
 ```
 
-服務將在 `http://localhost:8000` 啟動。
+服務將在 `http://localhost:8001` 啟動。
 
 ## 📦 安裝指南
 
@@ -132,7 +132,7 @@ python run.py
 python verify_paddle_mps.py --lang en
 ```
 
-這將測試 PaddleOCR 是否正確安裝並啟用 MPS 加速。
+這將測試 PaddleOCR 是否正確安裝並在 CPU 模式下運行。
 
 ## 💡 使用說明
 

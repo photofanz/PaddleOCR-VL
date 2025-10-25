@@ -1,6 +1,6 @@
 """
-Gemini API 整合服務
-處理文字結構化、總結等 AI 功能
+Gemini API integration service
+Handles text structuring, summarization and other AI features
 """
 
 import google.generativeai as genai
@@ -12,7 +12,7 @@ import os
 logger = logging.getLogger(__name__)
 
 
-# 預設提示詞庫
+# Default prompt library
 DEFAULT_PROMPTS = {
     "structure": """你是一個專業的文件格式化助手。請將以下 OCR 辨識的原始文字，轉換為結構良好、易於閱讀的 Markdown 文件。
 

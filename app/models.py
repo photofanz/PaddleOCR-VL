@@ -1,6 +1,6 @@
 """
-資料模型定義
-使用 Pydantic 進行資料驗證
+Data model definitions
+Using Pydantic for data validation
 """
 
 from typing import Optional, List, Dict, Any
@@ -9,25 +9,25 @@ from datetime import datetime
 
 
 class MetadataField(BaseModel):
-    """單個 Metadata 欄位"""
+    """Single Metadata field"""
     key: str
     value: str
     required: bool = False
 
 
 class MetadataFields(BaseModel):
-    """Paper to Obsidian 風格的 Metadata 欄位集合"""
-    title: Optional[str] = Field(None, description="標題")
-    chinese_title: Optional[str] = Field(None, description="中文譯題")
-    authors: Optional[str] = Field(None, description="作者")
-    source: Optional[str] = Field(None, description="來源（期刊/會議/書籍）")
-    year: Optional[int] = Field(None, description="年份")
-    keywords: Optional[List[str]] = Field(default_factory=list, description="關鍵字")
-    abstract: Optional[str] = Field(None, description="摘要")
-    custom_fields: Optional[Dict[str, str]] = Field(default_factory=dict, description="自訂欄位")
+    """Paper to Obsidian style Metadata field collection"""
+    title: Optional[str] = Field(None, description="Title")
+    chinese_title: Optional[str] = Field(None, description="Chinese translation title")
+    authors: Optional[str] = Field(None, description="Authors")
+    source: Optional[str] = Field(None, description="Source (journal/conference/book)")
+    year: Optional[int] = Field(None, description="Year")
+    keywords: Optional[List[str]] = Field(default_factory=list, description="Keywords")
+    abstract: Optional[str] = Field(None, description="Abstract")
+    custom_fields: Optional[Dict[str, str]] = Field(default_factory=dict, description="Custom fields")
     
     def to_yaml_frontmatter(self) -> str:
-        """轉換為 YAML frontmatter 格式"""
+        """Convert to YAML frontmatter format"""
         lines = ["---"]
         
         if self.title:

@@ -1,6 +1,6 @@
 """
-FastAPI 主應用程式
-提供所有 API 端點
+FastAPI Main Application
+Provides all API endpoints
 """
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Request
@@ -32,21 +32,21 @@ from .utils import (
     reconstruct_layout_for_txt
 )
 
-# 設定日誌
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# 創建 FastAPI 應用
+# Create FastAPI application
 app = FastAPI(
     title="PaddleOCR-VL Web Application",
     description=__description__,
     version=__version__
 )
 
-# CORS 中介層
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

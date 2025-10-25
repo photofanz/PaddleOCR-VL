@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PaddleOCR-VL 部署指南 | MacBook Pro M3 Max</title>
+    <title>PaddleOCR-VL Deployment Guide | MacBook Pro M3 Max</title>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 Inter 字體 -->
@@ -46,7 +46,7 @@
         code {
             font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
         }
-        /* 複製按鈕 */
+        /* Copy button */
         .copy-btn {
             position: absolute;
             top: 0.75rem;
@@ -122,7 +122,7 @@
                 本報告將指導您完成一次架構升級：從先前基於 PyTorch 的 DeepSeek-OCR 方案，轉移到基於 PaddlePaddle 的 `PaddleOCR-VL` 方案。此舉旨在利用 PaddleOCR 在多語言辨識和複雜佈局分析方面的卓越能力。
             </p>
             <p class="text-gray-700 leading-relaxed">
-                與 DeepSeek-OCR 不同，PaddleOCR 本身不接受自然語言提示來生成 Markdown。因此，我們將採用一個更強大的<b>混合式架構</b>：在 M3 Max 本地利用 PaddleOCR 和 MPS 進行高速原始文字提取，然後利用 Gemini API 的強大語言能力，將這些原始文字智慧地結構化為精美的Markdown內容。
+                與 DeepSeek-OCR 不同，PaddleOCR 本身不接受自然語言提示來生成 Markdown。因此，我們將採用一個更強大的<b>混合式架構</b>：在 M3 Max 本地利用 PaddleOCR 進行穩定可靠的原始文字提取，然後利用 Gemini API 的強大語言能力，將這些原始文字智慧地結構化為精美的Markdown內容。
             </p>
         </section>
 
@@ -138,7 +138,7 @@
                     <ul class="list-disc list-outside pl-6 space-y-2 text-gray-700">
                         <li><strong>1. 前端 (Frontend):</strong> 保持不變 (HTML/JS)，但功能增強，可呼叫兩個不同的 Gemini 功能。</li>
                         <li><strong>2. 後端 API (Backend API):</strong> 依然使用 FastAPI，但其核心 OCR 服務將被替換。</li>
-                        <li><strong>3. 在地推理引擎 (Local Engine):</strong> `PaddleOCR` 運行在 `PaddlePaddle` 框架上，利用 M3 Max 的 MPS (透過 `use_gpu=True`) 進行硬體加速。</li>
+                        <li><strong>3. 在地推理引擎 (Local Engine):</strong> `PaddleOCR` 運行在 `PaddlePaddle` 框架上，使用 CPU 模式確保最佳穩定性和兼容性。</li>
                         <li><strong>4. 雲端結構化引擎 (Cloud Engine):</strong> `Gemini API` (gemini-2.5-flash) 負責將原始文字轉換為 Markdown 或進行總結。</li>
                     </ul>
                 </div>
@@ -167,7 +167,7 @@ conda activate paddle-ocr</code></pre>
                     
                     <h4 class="text-lg font-semibold text-gray-700 mb-2 mt-4">2. 安裝 PaddlePaddle 核心與依賴項</h4>
                     <p class="text-gray-700 mb-4 leading-relaxed">
-                        PaddlePaddle 官方提供了針對 Apple Silicon (arm64) 的版本，它將自動利用 MPS。
+                        PaddlePaddle 官方提供了針對 Apple Silicon (arm64) 的版本，使用 CPU 模式確保最佳穩定性。
                     </p>
                     <!-- 程式碼區塊 2: 安裝依賴 -->
                     <details class="mb-4">
@@ -209,7 +209,7 @@ pip install numpy</code></pre>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">python</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3.12</td><td class="px-6 py-4 text-sm text-gray-500">穩定的 Python 版本。</td></tr>
-                                <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">paddlepaddle</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">latest</td><td class="px-6 py-4 text-sm text-gray-500">核心深度學習框架。macOS arm64 版本內建 MPS 支援。</td></tr>
+                                <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">paddlepaddle</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">latest</td><td class="px-6 py-4 text-sm text-gray-500">核心深度學習框架。macOS arm64 版本，使用 CPU 模式確保穩定性。</td></tr>
                                 <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">paddleocr</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">>=2.7.3</td><td class="px-6 py-4 text-sm text-gray-500">主要的 OCR 工具套件。</td></tr>
                                 <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">numpy</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">latest</td><td class="px-6 py-4 text-sm text-gray-500">將 PIL Image 轉換為 PaddleOCR 所需的 NumPy 陣列。</td></tr>
                                 <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">PyMuPDF</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">latest</td><td class="px-6 py-4 text-sm text-gray-500">高效能的 PDF 轉圖像函式庫。</td></tr>
@@ -223,13 +223,13 @@ pip install numpy</code></pre>
 
         <!-- 第 2 節：核心推理引擎 -->
         <section class="bg-white shadow-lg rounded-lg p-6 md:p-8 mb-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">第 2 節：核心推理引擎：驗證 PaddleOCR-VL 與 MPS</h2>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">第 2 節：核心推理引擎：驗證 PaddleOCR-VL 與 CPU 模式</h2>
             <div class="space-y-6">
                 <!-- 2.1 驗證腳本 -->
                 <div>
-                    <h3 class="text-xl font-semibold text-gray-700 mb-3">2.1. 驗證 MPS 上的 PaddleOCR 推理</h3>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3">2.1. 驗證 CPU 模式上的 PaddleOCR 推理</h3>
                     <p class="text-gray-700 mb-4 leading-relaxed">
-                        建立一個名為 `verify_paddle_mps.py` 的新檔案。此腳本將初始化 `PaddleOCR`，明確啟用 GPU (MPS)，並處理單張圖像。
+                        建立一個名為 `verify_paddle_mps.py` 的新檔案。此腳本將初始化 `PaddleOCR`，使用 CPU 模式確保穩定性，並處理單張圖像。
                     </p>
                     <!-- 程式碼區塊 3: MPS 推理腳本 -->
                     <details class="mb-4">
@@ -249,14 +249,14 @@ def run_ocr(image_path: str, lang: str = 'en'):
     print("Initializing PaddleOCR...")
     
     # 1. 初始化 PaddleOCR
-    # use_gpu=True 在 M3 Max 上將自動嘗試使用 MPS
+    # 使用 CPU 模式確保最佳穩定性
     # lang='en' 支援英文。對於中文, 可使用 'ch_tra' (繁體) 或 'ch_sim' (簡體)
     try:
         ocr_engine = paddleocr.PaddleOCR(use_textline_orientation=True, lang=lang)
-        print(f"PaddleOCR initialized. Using language: {lang}. GPU (MPS) support enabled.")
+        print(f"PaddleOCR initialized. Using language: {lang}. CPU mode for stability.")
     except Exception as e:
-        print(f"Failed to initialize PaddleOCR with GPU: {e}")
-        print("Falling back to CPU...")
+        print(f"Failed to initialize PaddleOCR: {e}")
+        print("Please check your installation...")
         ocr_engine = paddleocr.PaddleOCR(use_textline_orientation=True, lang=lang)
         print("PaddleOCR initialized on CPU.")
 
@@ -413,9 +413,9 @@ class OCRService:
         lang = 'en'
         try:
             self.ocr_engine = paddleocr.PaddleOCR(use_textline_orientation=True, lang=lang)
-            print(f"PaddleOCR Service initialized on MPS (use_gpu=True) with lang='{lang}'")
+            print(f"PaddleOCR Service initialized on CPU with lang='{lang}'")
         except Exception as e:
-            print(f"Failed to load PaddleOCR on GPU: {e}. Falling back to CPU.")
+            print(f"Failed to load PaddleOCR: {e}. Please check your installation.")
             self.ocr_engine = paddleocr.PaddleOCR(use_textline_orientation=True, lang=lang)
             print(f"PaddleOCR Service initialized on CPU with lang='{lang}'")
 
@@ -883,7 +883,7 @@ async def process_document(file: UploadFile = File(...)):
                 <div>
                     <h3 class="text-xl font-semibold text-gray-700 mb-3">5.1. M3 Max 上的效能分析</h3>
                     <ul class="list-disc list-outside pl-6 space-y-2 text-gray-700">
-                        <li><strong>本地 OCR 效能:</strong> `PaddlePaddle` 框架對 Apple Silicon MPS 的支援日益成熟。在 `app/services.py` 中設定 `use_gpu=True` 將使 M3 Max 的 GPU 核心參與運算，極大地加速圖像的批次處理，效能遠超僅使用 CPU。</li>
+                        <li><strong>本地 OCR 效能:</strong> `PaddlePaddle` 框架在 Apple Silicon 上運行穩定。使用 CPU 模式確保最佳兼容性，處理速度依然優秀，適合大多數應用場景。</li>
                         <li><strong>記憶體佔用:</strong> PaddleOCR 的模型相較於大型 VLMs 更為輕量，在 M3 Max 的統一記憶體上運行綽綽有餘，確保了 API 服務的低延遲響應。</li>
                         <li><strong>混合式架構的優勢:</strong> 此架構是目前最兩全其美的方案。它利用本地硬體處理最耗時、資料量最大的 OCR 任務 (將圖像轉為文字)，同時利用雲端 Gemini API 處理最需要智慧的、基於語言模型的任務 (結構化與總結)。</li>
                     </ul>

@@ -1,6 +1,6 @@
 """
-工具函數模組
-主要處理 PDF 轉圖像等預處理工作
+Utility functions module
+Mainly handles PDF to image conversion and other preprocessing tasks
 """
 
 import fitz  # PyMuPDF
@@ -14,19 +14,19 @@ logger = logging.getLogger(__name__)
 
 def convert_pdf_to_images(
     pdf_bytes: bytes,
-    dpi: int = 100,  # 大幅降低 DPI 以提高處理速度
-    max_pages: int = 10  # 大幅降低最大頁數限制
+    dpi: int = 100,  # Significantly reduced DPI for faster processing
+    max_pages: int = 10  # Significantly reduced maximum page limit
 ) -> List[Image.Image]:
     """
-    將 PDF 轉換為圖像列表
+    Convert PDF to image list
     
     Args:
-        pdf_bytes: PDF 檔案的位元組內容
-        dpi: 解析度（DPI）
-        max_pages: 最大處理頁數
+        pdf_bytes: PDF file byte content
+        dpi: Resolution (DPI)
+        max_pages: Maximum pages to process
         
     Returns:
-        PIL Image 物件列表
+        List of PIL Image objects
     """
     images = []
     
