@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PaddleOCR-VL | 本地 OCR + 雲端 AI</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <!-- Marked.js for Markdown preview -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <!-- 頂部導航 -->
+    <nav class="top-nav">
+        <div class="nav-container">
+            <h1 class="nav-title">🔍 PaddleOCR-VL</h1>
+            <div class="nav-links">
+                <a href="/guide" target="_blank" class="nav-link">📖 部署指南</a>
+                <a href="/docs" target="_blank" class="nav-link">📊 API 文件</a>
+                <a href="/api/status" target="_blank" class="nav-link">🔍 系統狀態</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 步驟指示器 -->
+        <div class="steps-indicator">
+            <div class="step active" data-step="1">
+                <div class="step-number">1</div>
+                <div class="step-label">上傳檔案</div>
+            </div>
+            <div class="step" data-step="2">
+                <div class="step-number">2</div>
+                <div class="step-label">OCR 辨識</div>
+            </div>
+            <div class="step" data-step="3">
+                <div class="step-number">3</div>
+                <div class="step-label">AI 處理</div>
+            </div>
+            <div class="step" data-step="4">
+                <div class="step-number">4</div>
+                <div class="step-label">下載結果</div>
+            </div>
+        </div>
+
+        <!-- 1. 檔案上傳區 -->
+        <section class="section" id="upload-section">
+            <h2 class="section-title">📤 上傳文件</h2>
+            <div class="upload-area" id="upload-area">
+                <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg" hidden>
+                <div class="upload-icon">📁</div>
+                <p class="upload-text">拖放檔案至此，或點擊選擇</p>
+                <p class="upload-hint">支援格式：PDF、PNG、JPG、JPEG（最大 50MB）</p>
+            </div>
+            <div id="file-info" class="file-info hidden">
+                <div class="file-icon">📄</div>
+                <div class="file-details">
+                    <div class="file-name" id="file-name"></div>
+                    <div class="file-size" id="file-size"></div>
+                </div>
+                <button class="btn-icon" id="remove-file" title="移除檔案">🗑️</button>
+            </div>
+        </section>
+
+        <!-- 2. OCR 設定區 -->
+        <section class="section hidden" id="ocr-section">
+            <h2 class="section-title">⚙️ OCR 設定</h2>
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <label for="ocr-language">辨識語言</label>
+                    <select id="ocr-language" class="select-input">
+                        <option value="en">英文 (English)</option>
+                        <option value="ch_tra">繁體中文 (Traditional Chinese)</option>
+                        <option value="ch_sim">簡體中文 (Simplified Chinese)</option>
+                        <option value="japan">日文 (Japanese)</option>
+                        <option value="korean">韓文 (Korean)</option>
+                        <option value="french">法文 (French)</option>
+                        <option value="german">德文 (German)</option>
+                        <option value="spanish">西班牙文 (Spanish)</option>
+                    </select>
+                    <small class="text-gray-500">注意：繁體中文和簡體中文在 PaddleOCR 3.3.0 中都使用 'ch' 模型</small>
+                </div>
+                <div class="setting-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="use-angle-cls" checked>
+                        使用角度分類（提升準確度）
+                    </label>
+                </div>
+            </div>
+            <button class="btn btn-primary" id="start-ocr-btn">🚀 開始 OCR 辨識</button>
+            
+            <!-- 進度顯示 -->
+            <div id="ocr-progress" class="progress-container hidden">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="ocr-progress-fill"></div>
+                </div>
+                <p class="progress-text" id="ocr-progress-text">處理中...</p>
+                <p class="progress-time" id="ocr-progress-time">預估剩餘時間: 計算中...</p>
+            </div>
+        </section>
+
+        <!-- 3. OCR 結果顯示區 -->
+        <section class="section hidden" id="result-section">
+            <h2 class="section-title">📝 OCR 辨識結果</h2>
+            <div class="result-stats">
+                <span class="stat-item">⏱️ 處理時間：<strong id="processing-time">--</strong></span>
+                <span class="stat-item">📏 字數：<strong id="char-count">--</strong></span>
+            </div>
+            <textarea id="ocr-output" class="text-area" rows="15" placeholder="OCR 結果將顯示在這裡..."></textarea>
+        </section>
+
+        <!-- 4. Metadata 欄位區 -->
+        <section class="section hidden" id="metadata-section">
+            <h2 class="section-title">🏷️ 文件 Metadata（選填）</h2>
+            <div class="metadata-toggle">
+                <label class="switch">
+                    <input type="checkbox" id="enable-metadata">
+                    <span class="slider"></span>
+                </label>
+                <span class="toggle-label">啟用 Metadata（Paper to Obsidian 風格）</span>
+            </div>
+            
+            <div id="metadata-fields" class="metadata-fields hidden">
+                <div class="input-group">
+                    <label for="meta-title">標題 *</label>
+                    <input type="text" id="meta-title" placeholder="文件標題">
+                </div>
+                <div class="input-group">
+                    <label for="meta-chinese-title">中文譯題</label>
+                    <input type="text" id="meta-chinese-title" placeholder="中文標題（選填）">
+                </div>
+                <div class="input-group">
+                    <label for="meta-authors">作者</label>
+                    <input type="text" id="meta-authors" placeholder="作者姓名（多位作者以逗號分隔）">
+                </div>
+                <div class="input-group">
+                    <label for="meta-source">來源</label>
+                    <input type="text" id="meta-source" placeholder="期刊/會議/書籍名稱">
+                </div>
+                <div class="input-group">
+                    <label for="meta-year">年份</label>
+                    <input type="number" id="meta-year" placeholder="2025" min="1900" max="2100">
+                </div>
+                <div class="input-group">
+                    <label for="meta-keywords">關鍵字</label>
+                    <input type="text" id="meta-keywords" placeholder="關鍵字1, 關鍵字2, 關鍵字3">
+                    <small>以逗號分隔</small>
+                </div>
+                <div class="input-group">
+                    <label for="meta-abstract">摘要</label>
+                    <textarea id="meta-abstract" rows="4" placeholder="文件摘要（選填）"></textarea>
+                </div>
+                
+                <!-- 自訂欄位 -->
+                <div class="custom-fields">
+                    <h4>自訂欄位</h4>
+                    <div id="custom-fields-container"></div>
+                    <button class="btn btn-secondary btn-sm" id="add-custom-field">➕ 新增欄位</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. AI 處理區 -->
+        <section class="section hidden" id="ai-section">
+            <h2 class="section-title">✨ AI 智能處理</h2>
+            
+            <div class="prompt-selector">
+                <label for="prompt-type">選擇處理模式</label>
+                <select id="prompt-type" class="select-input">
+                    <option value="structure">結構化為 Markdown</option>
+                    <option value="summarize">生成摘要</option>
+                    <option value="academic">學術論文分析（Paper to Obsidian）</option>
+                    <option value="custom">自訂提示詞</option>
+                    <option value="none">不處理（直接下載原始文字）</option>
+                </select>
+            </div>
+            
+            <div id="prompt-preview" class="prompt-preview">
+                <h4>系統提示詞預覽</h4>
+                <textarea id="prompt-text" class="text-area" rows="6" readonly></textarea>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="edit-prompt">
+                    允許編輯提示詞
+                </label>
+            </div>
+            
+            <div id="custom-prompt-container" class="hidden">
+                <label for="custom-prompt">自訂提示詞</label>
+                <textarea id="custom-prompt" class="text-area" rows="6" placeholder="輸入您的自訂提示詞..."></textarea>
+            </div>
+            
+            <div class="ai-actions">
+                <button class="btn btn-ai" id="process-with-ai-btn">
+                    <span class="btn-icon">🤖</span>
+                    使用 Gemini 處理
+                </button>
+                <button class="btn btn-secondary" id="skip-ai-btn">跳過 AI 處理</button>
+            </div>
+            
+            <div id="ai-progress" class="progress-container hidden">
+                <div class="spinner"></div>
+                <p class="progress-text">Gemini API 處理中，請稍候...</p>
+            </div>
+        </section>
+
+        <!-- 6. 最終結果預覽區 -->
+        <section class="section hidden" id="preview-section">
+            <h2 class="section-title">👁️ 結果預覽</h2>
+            
+            <div class="preview-tabs">
+                <button class="tab-btn active" data-tab="markdown">Markdown 預覽</button>
+                <button class="tab-btn" data-tab="raw">原始程式碼</button>
+            </div>
+            
+            <div class="tab-content active" id="tab-markdown">
+                <div id="markdown-preview" class="markdown-preview"></div>
+            </div>
+            
+            <div class="tab-content" id="tab-raw">
+                <textarea id="markdown-raw" class="text-area" rows="20"></textarea>
+            </div>
+        </section>
+
+        <!-- 7. 下載區 -->
+        <section class="section hidden" id="download-section">
+            <h2 class="section-title">💾 下載結果</h2>
+            
+            <div class="download-options">
+                <div class="download-item">
+                    <div class="download-icon">📄</div>
+                    <div class="download-info">
+                        <h4>Markdown 格式</h4>
+                        <p>適合 Obsidian、Notion 等筆記軟體</p>
+                    </div>
+                    <button class="btn btn-download" id="download-md-btn">下載 .md</button>
+                </div>
+                
+                <div class="download-item">
+                    <div class="download-icon">📝</div>
+                    <div class="download-info">
+                        <h4>純文字格式</h4>
+                        <p>保持原始 PDF 佈局</p>
+                    </div>
+                    <button class="btn btn-download" id="download-txt-btn">下載 .txt</button>
+                </div>
+            </div>
+            
+            <div class="download-filename">
+                <label for="download-filename">檔案名稱（不含副檔名）</label>
+                <input type="text" id="download-filename" placeholder="document">
+            </div>
+            
+            <button class="btn btn-secondary btn-block" id="restart-btn">🔄 處理新文件</button>
+        </section>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- 載入 JavaScript -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
+

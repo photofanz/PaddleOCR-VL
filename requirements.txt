@@ -1,0 +1,30 @@
+# 核心框架
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-multipart==0.0.12
+aiofiles==24.1.0
+
+# OCR 相關
+paddlepaddle==3.0.0
+paddleocr>=2.7.3
+
+# 圖像與 PDF 處理
+Pillow==10.4.0
+PyMuPDF==1.24.13
+numpy==1.26.4
+
+# AI API 客戶端
+google-generativeai==0.8.3
+httpx==0.27.2
+
+# 環境變數管理
+python-dotenv==1.0.1
+
+# 資料驗證
+pydantic==2.9.2
+pydantic-settings==2.5.2
+
+# 測試
+pytest==8.3.3
+pytest-asyncio==0.24.0
+

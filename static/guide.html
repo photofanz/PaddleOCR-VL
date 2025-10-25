@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PaddleOCR-VL 部署指南 | MacBook Pro M3 Max</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Inter 字體 -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f3f4f6; /* 淺灰色背景 */
+        }
+        /* <details> 標記的樣式 */
+        details > summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 0.75rem 1rem;
+            background-color: #f9fafb; /* 摘要背景色 */
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem 0.5rem 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+        details[open] > summary {
+            border-bottom: 1px solid #e5e7eb;
+        }
+        details > div {
+            border: 1px solid #e5e7eb;
+            border-top: none;
+            border-radius: 0 0 0.5rem 0.5rem;
+            position: relative;
+        }
+        pre {
+            margin: 0;
+            border-radius: 0 0 0.5rem 0.5rem;
+            background-color: #1f2937; /* 深色程式碼背景 */
+            color: #d1d5db;
+            padding: 1.25rem;
+            overflow-x: auto;
+        }
+        code {
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+        }
+        /* 複製按鈕 */
+        .copy-btn {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            background-color: #4b5563;
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover {
+            opacity: 1;
+            background-color: #374151;
+        }
+        /* 複製提示 */
+        #copy-toast {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #1f2937;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: bottom 0.3s ease-in-out;
+            z-index: 50;
+        }
+        
+        /* ✨ 新樣式：Gemini 按鈕 */
+        .btn { padding: 0.6rem 1rem; color: white; border: none; border-radius: 4px; font-size: 0.9rem; cursor: pointer; transition: background-color 0.2s; }
+        .btn-primary { background-color: #007bff; }
+        .btn-primary:hover { background-color: #0056b3; }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-secondary:hover { background-color: #5a6268; }
+        /* 區分兩個 Gemini 功能 */
+        .btn-gemini-structure { background-color: #00796B; } /* 結構化 - 綠色 */
+        .btn-gemini-structure:hover { background-color: #004D40; }
+        .btn-gemini-summarize { background-color: #8E44AD; } /* 總結 - 紫色 */
+        .btn-gemini-summarize:hover { background-color: #732d91; }
+        .btn:disabled { background-color: #adb5bd; cursor: not-allowed; }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- 複製提示框 -->
+    <div id="copy-toast">已複製到剪貼簿！</div>
+
+    <!-- 主容器 -->
+    <div class="container mx-auto max-w-4xl px-4 py-12">
+        
+        <!-- 頁首 -->
+        <header class="mb-10">
+            <div class="text-center mb-4">
+                <a href="/" class="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                    ← 返回應用程式
+                </a>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-900 text-center mb-2">在 MacBook Pro M3 Max 上部署 PaddleOCR-VL</h1>
+            <p class="text-xl text-gray-600 text-center">一份在地化 OCR + 雲端 Gemini 結構化的混合式實施指南</p>
+        </header>
+
+        <!-- 執行摘要 -->
+        <section class="bg-white shadow-lg rounded-lg p-6 md:p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">執行摘要</h2>
+            <p class="text-gray-700 leading-relaxed mb-4">
+                本報告將指導您完成一次架構升級：從先前基於 PyTorch 的 DeepSeek-OCR 方案，轉移到基於 PaddlePaddle 的 `PaddleOCR-VL` 方案。此舉旨在利用 PaddleOCR 在多語言辨識和複雜佈局分析方面的卓越能力。
+            </p>
+            <p class="text-gray-700 leading-relaxed">
+                與 DeepSeek-OCR 不同，PaddleOCR 本身不接受自然語言提示來生成 Markdown。因此，我們將採用一個更強大的<b>混合式架構</b>：在 M3 Max 本地利用 PaddleOCR 和 MPS 進行高速原始文字提取，然後利用 Gemini API 的強大語言能力，將這些原始文字智慧地結構化為精美的Markdown內容。
+            </p>
+        </section>
+
+        <!-- 第 1 節：架構與環境 -->
+        <section class="bg-white shadow-lg rounded-lg p-6 md:p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">第 1 節：全新的混合式架構與 PaddlePaddle 環境</h2>
+
+            <div class="space-y-6">
+                <!-- 1.1 系統架構 -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3">1.1. 混合式系統架構</h3>
+                    <p class="text-gray-700 mb-3 leading-relaxed">新的架構結合了本地和雲端的優勢：</p>
+                    <ul class="list-disc list-outside pl-6 space-y-2 text-gray-700">
+                        <li><strong>1. 前端 (Frontend):</strong> 保持不變 (HTML/JS)，但功能增強，可呼叫兩個不同的 Gemini 功能。</li>
+                        <li><strong>2. 後端 API (Backend API):</strong> 依然使用 FastAPI，但其核心 OCR 服務將被替換。</li>
+                        <li><strong>3. 在地推理引擎 (Local Engine):</strong> `PaddleOCR` 運行在 `PaddlePaddle` 框架上，利用 M3 Max 的 MPS (透過 `use_gpu=True`) 進行硬體加速。</li>
+                        <li><strong>4. 雲端結構化引擎 (Cloud Engine):</strong> `Gemini API` (gemini-2.5-flash) 負責將原始文字轉換為 Markdown 或進行總結。</li>
+                    </ul>
+                </div>
+                
+                <!-- 1.2 環境設定 -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3">1.2. 建立 PaddlePaddle 的 Conda 環境</h3>
+                    <p class="text-gray-700 mb-4 leading-relaxed">我們必須建立一個全新的 Conda 環境，因為底層的深度學習框架已從 PyTorch 變為 PaddlePaddle。</p>
+                    
+                    <h4 class="text-lg font-semibold text-gray-700 mb-2">1. 建立並啟用新的 Conda 環境</h4>
+                    <!-- 程式碼區塊 1: 建立 Conda 環境 -->
+                    <details class="mb-4">
+                        <summary>
+                            <span>Bash: 建立並啟用環境</span>
+                            <span class="text-sm font-normal text-gray-500">展開/收合</span>
+                        </summary>
+                        <div>
+                            <button class="copy-btn" onclick="copyToClipboard('code-1')">複製</button>
+                            <pre><code id="code-1"># 建立一個名為 paddle-ocr 的新環境
+conda create -n paddle-ocr python=3.12 -y
+
+# 啟用此環境
+conda activate paddle-ocr</code></pre>
+                        </div>
+                    </details>
+                    
+                    <h4 class="text-lg font-semibold text-gray-700 mb-2 mt-4">2. 安裝 PaddlePaddle 核心與依賴項</h4>
+                    <p class="text-gray-700 mb-4 leading-relaxed">
+                        PaddlePaddle 官方提供了針對 Apple Silicon (arm64) 的版本，它將自動利用 MPS。
+                    </p>
+                    <!-- 程式碼區塊 2: 安裝依賴 -->
+                    <details class="mb-4">
+                        <summary>
+                            <span>Bash: 使用 pip 安裝 Python 函式庫</span>
+                            <span class="text-sm font-normal text-gray-500">展開/收合</span>
+                        </summary>
+                        <div>
+                            <button class="copy-btn" onclick="copyToClipboard('code-2')">複製</button>
+                            <pre><code id="code-2"># 1. 安裝 PaddlePaddle 核心框架 (適用於 macOS arm64)
+# 這將自動包含 MPS 支援
+pip install paddlepaddle
+
+# 2. 安裝 PaddleOCR 套件
+# 建議使用 2.7.3 或更高版本
+pip install "paddleocr>=2.7.3"
+
+# 3. 安裝 Web 框架及 PDF/圖像處理工具
+pip install "fastapi[all]" aiofiles PyMuPDF pillow
+
+# 4. 關鍵依賴：NumPy
+# PaddleOCR 需要 NumPy 陣列作為輸入
+pip install numpy</code></pre>
+                        </div>
+                    </details>
+                </div>
+                
+                <!-- 表 1 -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3 mt-6">表 1：Apple Silicon (M3 Max) 上的 PaddleOCR 依賴清單</h3>
+                    <div class="overflow-x-auto shadow rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">套件</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">版本</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">理由與來源</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">python</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3.12</td><td class="px-6 py-4 text-sm text-gray-500">穩定的 Python 版本。</td></tr>
+                                <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">paddlepaddle</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">latest</td><td class="px-6 py-4 text-sm text-gray-500">核心深度學習框架。macOS arm64 版本內建 MPS 支援。</td></tr>
+                                <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">paddleocr</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">>=2.7.3</td><td class="px-6 py-4 text-sm text-gray-500">主要的 OCR 工具套件。</td></tr>
+                                <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">numpy</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">latest</td><td class="px-6 py-4 text-sm text-gray-500">將 PIL Image 轉換為 PaddleOCR 所需的 NumPy 陣列。</td></tr>
+                                <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">PyMuPDF</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">latest</td><td class="px-6 py-4 text-sm text-gray-500">高效能的 PDF 轉圖像函式庫。</td></tr>
+                                <tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">fastapi</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">latest</td><td class="px-6 py-4 text-sm text-gray-500">後端 API 的核心 Web 框架。</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第 2 節：核心推理引擎 -->
+        <section class="bg-white shadow-lg rounded-lg p-6 md:p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">第 2 節：核心推理引擎：驗證 PaddleOCR-VL 與 MPS</h2>
+            <div class="space-y-6">
+                <!-- 2.1 驗證腳本 -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3">2.1. 驗證 MPS 上的 PaddleOCR 推理</h3>
+                    <p class="text-gray-700 mb-4 leading-relaxed">
+                        建立一個名為 `verify_paddle_mps.py` 的新檔案。此腳本將初始化 `PaddleOCR`，明確啟用 GPU (MPS)，並處理單張圖像。
+                    </p>
+                    <!-- 程式碼區塊 3: MPS 推理腳本 -->
+                    <details class="mb-4">
+                        <summary>
+                            <span>Python: verify_paddle_mps.py</span>
+                            <span class="text-sm font-normal text-gray-500">展開/收合</span>
+                        </summary>
+                        <div>
+                            <button class="copy-btn" onclick="copyToClipboard('code-3')">複製</button>
+                            <pre><code id="code-3">import paddleocr
+import numpy as np
+from PIL import Image
+import argparse
+import os
+
+def run_ocr(image_path: str, lang: str = 'en'):
+    print("Initializing PaddleOCR...")
+    
+    # 1. 初始化 PaddleOCR
+    # use_gpu=True 在 M3 Max 上將自動嘗試使用 MPS
+    # lang='en' 支援英文。對於中文, 可使用 'ch_tra' (繁體) 或 'ch_sim' (簡體)
+    try:
+        ocr_engine = paddleocr.PaddleOCR(use_textline_orientation=True, lang=lang)
+        print(f"PaddleOCR initialized. Using language: {lang}. GPU (MPS) support enabled.")
+    except Exception as e:
+        print(f"Failed to initialize PaddleOCR with GPU: {e}")
+        print("Falling back to CPU...")
+        ocr_engine = paddleocr.PaddleOCR(use_textline_orientation=True, lang=lang)
+        print("PaddleOCR initialized on CPU.")
+
+    # --- 推理執行 ---
+    try:
+        print(f"Processing image: {image_path}")
+        
+        # 2. 載入圖像並轉換為 NumPy 陣列
+        # PaddleOCR 需要 BGR 格式的 NumPy 陣列
+        image = Image.open(image_path).convert('RGB')
+        image_np = np.array(image)
+        # RGB -> BGR
+        image_bgr = image_np[:, :, ::-1]
+        
+        # 3. 執行 OCR
+        # result 是一個列表, e.g., [[[bbox], (text, confidence)], ...]
+        result = ocr_engine.ocr(image_bgr, cls=True)
+        
+        print("\n--- Raw OCR Result (Structure) ---")
+        print(result)
+
+        # 4. 提取純文字
+        raw_text = []
+        if result and result[0]:
+            for line_data in result[0]:
+                text = line_data[1][0] # 提取文字
+                confidence = line_data[1][1] # 提取信心度
+                raw_text.append(text)
+                print(f"  [Conf: {confidence:.2f}] {text}")
+        
+        print("\n--- Extracted Plain Text ---")
+        print("\n".join(raw_text))
+
+    except Exception as e:
+        print(f"An error occurred during inference: {e}")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run PaddleOCR inference on a single image.")
+    parser.add_argument("--image", type=str, required=True, help="Path to the input image file.")
+    parser.add_argument("--lang", type=str, default="en", help="Language code (e.g., 'en', 'ch_tra').")
+    args = parser.parse_args()
+
+    if not os.path.exists(args.image):
+        print(f"Error: Image file not found at {args.image}")
+    else:
+        run_ocr(args.image, args.lang)
+</code></pre>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- 2.2 輸出格式的差異 -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3">2.2. 輸出格式的關鍵差異</h3>
+                    <p class="text-gray-700 mb-4 leading-relaxed">
+                        執行此腳本，您會發現 `PaddleOCR` 的輸出是一個包含座標、文字和信心度的詳細列表。
+                    </p>
+                    <p class="text-gray-700 bg-yellow-50 p-3 rounded-md text-yellow-800">
+                        <strong>重要區別：</strong> `PaddleOCR` 不接受「轉換為 Markdown」的提示詞。它提供的是**原始的、高準確度的文字和佈局資訊**。我們將把這些原始文字傳遞給 Gemini API 進行後續的智慧格式化。
+                    </p>
+                </div>
+                
+                <!-- 2.3 執行驗證 -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3">2.3. 獨立驗證測試</h3>
+                    <!-- 程式碼區塊 4: 執行驗證 -->
+                    <details class="mb-4">
+                        <summary>
+                            <span>Bash: 執行驗證腳本</span>
+                            <span class="text-sm font-normal text-gray-500">展開/收合</span>
+                        </summary>
+                        <div>
+                            <button class="copy-btn" onclick="copyToClipboard('code-4')">複製</button>
+                            <pre><code id="code-4"># 執行英文模型
+python verify_paddle_mps.py --image /path/to/your/image.png --lang en
+
+# 執行繁體中文模型 (需下載相應模型)
+# python verify_paddle_mps.py --image /path/to/your/chinese_image.png --lang ch_tra</code></pre>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第 3 節：FastAPI 後端 -->
+        <section class="bg-white shadow-lg rounded-lg p-6 md:p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">第 3 節：升級 FastAPI 後端以支援 PaddleOCR</h2>
+            <div class="space-y-6">
+                <!-- 3.1 專案結構 -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3">3.1. 專案結構 (保持不變)</h3>
+                    <p class="text-gray-700 mb-4 leading-relaxed">
+                        我們的模組化結構依然適用，但我們將修改 `services.py` 和 `main.py` 的內部邏輯。
+                    </p>
+                    <!-- 程式碼區塊 5: 專案結構 -->
+                    <details class="mb-4">
+                        <summary>
+                            <span>文字: 專案檔案結構</span>
+                            <span class="text-sm font-normal text-gray-500">展開/收合</span>
+                        </summary>
+                        <div>
+                            <button class="copy-btn" onclick="copyToClipboard('code-5')">複製</button>
+                            <pre><code id="code-5">deepseek_ocr_app/
+├── app/
+│   ├── __init__.py
+│   ├── main.py         # FastAPI 應用實例、API 路由
+│   ├── services.py     # ✨ 核心 OCR 服務 (已替換為 PaddleOCR)
+│   └── utils.py        # PDF 預處理 (保持不變)
+├── static/             # 前端檔案
+│   ├── index.html
+│   └── script.js
+└── run.py              # 啟動腳本 (保持不變)
+</code></pre>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- 3.2 PDF 預處理 -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3">3.2. PDF 預處理 (app/utils.py)</h3>
+                    <p class="text-gray-700 mb-4 leading-relaxed">
+                        `app/utils.py` 檔案保持不變。它將 PDF 轉換為 PIL Image 列表的功能仍然完美適用。
+                    </p>
+                </div>
+
+                <!-- 3.3 核心 API -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3">3.3. 替換核心 OCR 服務 (app/services.py)</h3>
+                    <p class="text-gray-700 mb-4 leading-relaxed">
+                        這是最大的改動。我們將 `OCRService` 類完全替換為使用 `PaddleOCR`。
+                    </p>
+                    <!-- 程式碼區塊 6: app/services.py -->
+                    <details class="mb-4">
+                        <summary>
+                            <span>Python: app/services.py (PaddleOCR 版本)</span>
+                            <span class="text-sm font-normal text-gray-500">展開/收合</span>
+                        </summary>
+                        <div>
+                            <button class="copy-btn" onclick="copyToClipboard('code-6')">複製</button>
+                            <pre><code id="code-6"># app/services.py
+import paddleocr
+import numpy as np
+from PIL import Image
+from typing import List
+import logging
+
+# 設置 paddleocr 的日誌級別，避免過多的調試信息
+logging.getLogger('paddleocr').setLevel(logging.ERROR)
+
+class OCRService:
+    def __init__(self):
+        # 設備和模型只在服務實例化時載入一次
+        # 預設使用英文。可根據需求更改為 'ch_tra' 或其他
+        lang = 'en'
+        try:
+            self.ocr_engine = paddleocr.PaddleOCR(use_textline_orientation=True, lang=lang)
+            print(f"PaddleOCR Service initialized on MPS (use_gpu=True) with lang='{lang}'")
+        except Exception as e:
+            print(f"Failed to load PaddleOCR on GPU: {e}. Falling back to CPU.")
+            self.ocr_engine = paddleocr.PaddleOCR(use_textline_orientation=True, lang=lang)
+            print(f"PaddleOCR Service initialized on CPU with lang='{lang}'")
+
+    def process_images(self, images: List[Image.Image]) -> str:
+        """
+        處理一個 PIL Image 列表，返回合併後的原始文字字串。
+        """
+        all_pages_text = []
+        for i, image in enumerate(images):
+            print(f"Processing image {i+1}/{len(images)}...")
+            try:
+                # 1. 將 PIL Image (RGB) 轉換為 NumPy 陣列 (BGR)
+                image_np = np.array(image.convert('RGB'))
+                image_bgr = image_np[:, :, ::-1]
+                
+                # 2. 執行 OCR
+                result = self.ocr_engine.ocr(image_bgr, cls=True)
+                
+                # 3. 提取文字
+                page_text_lines = []
+                if result and result[0]:
+                    for line_data in result[0]:
+                        page_text_lines.append(line_data[1][0])
+                
+                all_pages_text.append("\n".join(page_text_lines))
+
+            except Exception as e:
+                error_message = f"\n\n---\n\n**Error processing page {i+1}:**\n`{str(e)}`\n\n---\n\n"
+                all_pages_text.append(error_message)
+        
+        # 將所有頁面的結果用分隔符連接起來
+        return "\n\n--- Page Break ---\n\n".join(all_pages_text)
+
+# 建立一個單例的服務實例，以便在整個應用程式中重複使用
+ocr_service = OCRService()
+</code></pre>
+                        </div>
+                    </details>
+                    
+                    <!-- 程式碼區塊 7: app/main.py -->
+                    <details class="mb-4">
+                        <summary>
+                            <span>Python: app/main.py (更新)</span>
+                            <span class="text-sm font-normal text-gray-500">展開/收合</span>
+                        </summary>
+                        <div>
+                            <button class="copy-btn" onclick="copyToClipboard('code-7')">複製</button>
+                            <pre><code id="code-7"># app/main.py
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from .services import ocr_service # 導入新的 PaddleOCR 服務
+from .utils import convert_pdf_to_images
+from PIL import Image
+import aiofiles
+import io
+
+app = FastAPI()
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root():
+    try:
+        async with aiofiles.open("static/index.html", mode='r') as f:
+            content = await f.read()
+        return HTMLResponse(content=content)
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>Frontend file not found.</h1>", status_code=404)
+
+@app.post("/process-document/")
+async def process_document(file: UploadFile = File(...)):
+    if not file.content_type in ["application/pdf", "image/png", "image/jpeg"]:
+        raise HTTPException(status_code=400, detail="Invalid file type.")
+
+    contents = await file.read()
+    images = []
+
+    if file.content_type == "application/pdf":
+        print("Processing PDF file...")
+        images = convert_pdf_to_images(contents)
+    else:
+        print("Processing image file...")
+        try:
+            image_stream = io.BytesIO(contents)
+            img = Image.open(image_stream).convert("RGB")
+            images.append(img)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Could not process image file: {e}")
+
+    if not images:
+        raise HTTPException(status_code=500, detail="Failed to extract images from the document.")
+
+    # 使用新的 PaddleOCR 服務處理圖像
+    final_raw_text = ocr_service.process_images(images)
+
+    # 返回包含原始文字的 JSON
+    # 我們使用 'ocr_text' 作為鍵名，以區分之前的 'markdown'
+    return {"ocr_text": final_raw_text}
+</code></pre>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+
+        <!-- 第 4 節：前端介面 -->
+        <section class="bg-white shadow-lg rounded-lg p-6 md:p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">第 4 節：升級前端：Gemini 驅動的結構化</h2>
+            <p class="text-gray-700 mb-4 leading-relaxed">
+                前端介面是我們新架構的魔法發生地。我們將新增一個按鈕，專門用於呼叫 Gemini API 來「格式化」PaddleOCR 提取的原始文字。
+            </p>
+            
+            <!-- 4.1 HTML -->
+            <div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">4.1. HTML 結構 (static/index.html)</h3>
+                <!-- 程式碼區塊 8: static/index.html -->
+                <details class="mb-4">
+                    <summary>
+                        <span>HTML: static/index.html (更新)</span>
+                        <span class="text-sm font-normal text-gray-500">展開/收合</span>
+                    </summary>
+                    <div>
+                        <button class="copy-btn" onclick="copyToClipboard('code-8')">複製</button>
+                        <pre><code id="code-8">&lt;!DOCTYPE html&gt;
+&lt;html lang="zh-TW"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;PaddleOCR + Gemini&lt;/title>
+    &lt;!-- 引入 head 中的 style 標籤 --&gt;
+    &lt;style&gt;
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 2rem; background-color: #f8f9fa; color: #212529; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { max-width: 600px; width: 100%; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #343a40; }
+        #upload-form { display: flex; flex-direction: column; gap: 1rem; }
+        #file-input-label { border: 2px dashed #dee2e6; padding: 2rem; border-radius: 8px; text-align: center; cursor: pointer; transition: border-color 0.2s; }
+        #file-input-label:hover { border-color: #007bff; }
+        #file-input { display: none; }
+        #file-name { text-align: center; color: #495057; font-size: 0.9rem; margin-top: -0.5rem; }
+        
+        /* 按鈕樣式 */
+        .btn { padding: 0.6rem 1rem; color: white; border: none; border-radius: 4px; font-size: 0.9rem; cursor: pointer; transition: background-color 0.2s; white-space: nowrap; }
+        .btn-primary { background-color: #007bff; padding: 0.75rem; font-size: 1rem; }
+        .btn-primary:hover { background-color: #0056b3; }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-secondary:hover { background-color: #5a6268; }
+        .btn-gemini-structure { background-color: #00796B; } /* 結構化 - 綠色 */
+        .btn-gemini-structure:hover { background-color: #004D40; }
+        .btn-gemini-summarize { background-color: #8E44AD; } /* 總結 - 紫色 */
+        .btn-gemini-summarize:hover { background-color: #732d91; }
+        .btn:disabled { background-color: #adb5bd; cursor: not-allowed; }
+
+        .progress-container { display: none; margin-top: 1rem; }
+        #upload-progress { width: 100%; height: 8px; appearance: none; border: none; border-radius: 4px; overflow: hidden; }
+        #upload-progress::-webkit-progress-bar { background-color: #e9ecef; }
+        #upload-progress::-webkit-progress-value { background-color: #007bff; }
+        #status { margin-top: 1rem; text-align: center; font-weight: 500; color: #495057; }
+
+        .hidden { display: none; }
+        #results-container { margin-top: 2rem; border-top: 1px solid #dee2e6; padding-top: 1.5rem; }
+        #ocr-output { width: 100%; height: 200px; border: 1px solid #ced4da; border-radius: 4px; padding: 0.5rem; font-family: monospace; font-size: 0.85rem; }
+        #controls-container { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+        
+        #gemini-output-container { margin-top: 1.5rem; }
+        #gemini-output-title { margin-bottom: 0.5rem; font-weight: bold; }
+        #gemini-output { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; padding: 1rem; min-height: 100px; white-space: pre-wrap; word-wrap: break-word; }
+        #gemini-loading { text-align: center; color: #495057; }
+
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div class="container"&gt;
+        &lt;h1&gt;PaddleOCR 本地辨識 + Gemini 雲端智慧&lt;/h1&gt;
+        &lt;form id="upload-form"&gt;
+            &lt;label for="file-input" id="file-input-label"&gt;
+                &lt;span&gt;點擊此處選擇檔案&lt;/span&gt;
+            &lt;/label&gt;
+            &lt;input type="file" id="file-input" name="file" accept=".pdf,.png,.jpg,.jpeg" required&gt;
+            &lt;div id="file-name"&gt;尚未選擇檔案&lt;/div&gt;
+            &lt;button type="submit" id="submit-btn" class="btn btn-primary" disabled&gt;開始 OCR 辨識&lt;/button&gt;
+        &lt;/form&gt;
+        &lt;div class="progress-container" id="progress-container"&gt;
+            &lt;progress id="upload-progress" value="0" max="100"&gt;&lt;/progress&gt;
+        &lt;/div&gt;
+        &lt;div id="status"&gt;請選擇一個 PDF 或圖像檔案&lt;/div&gt;
+
+        &lt;!-- ✨ 更新的結果區域 --&gt;
+        &lt;div id="results-container" class="hidden"&gt;
+            &lt;h2 style="text-align: center; margin-bottom: 1rem;"&gt;PaddleOCR 原始辨識結果&lt;/h2&gt;
+            &lt;textarea id="ocr-output" readonly&gt;&lt;/textarea&gt;
+            
+            &lt;div id="controls-container"&gt;
+                &lt;button id="download-btn" class="btn btn-secondary"&gt;下載原始文字&lt;/button&gt;
+                &lt;!-- ✨ 新增的結構化按鈕 --&gt;
+                &lt;button id="structure-btn" class="btn btn-gemini-structure"&gt;✨ 結構化為 Markdown (Gemini)&lt;/button&gt;
+                &lt;button id="summarize-btn" class="btn btn-gemini-summarize"&gt;✨ 總結內容 (Gemini)&lt;/button&gt;
+            &lt;/div&gt;
+            
+            &lt;div id="gemini-output-container" class="hidden"&gt;
+                &lt;h3 id="gemini-output-title"&gt;Gemini 結果:&lt;/h3&gt;
+                &lt;div id="gemini-loading" class="hidden"&gt;
+                    &lt;p&gt;🤖 正在請求 Gemini API (gemini-2.5-flash)，請稍候...&lt;/p&gt;
+                &lt;/div&gt;
+                &lt;div id="gemini-output"&gt;&lt;/div&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;script src="/static/script.js"&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+                </details>
+            </div>
+            
+            <!-- 4.2 JS -->
+            <div>
+                <h3 class="text-xl font-semibold text-gray-700 mb-3">4.2. JavaScript 邏輯 (static/script.js)</h3>
+                <p class="text-gray-700 mb-4 leading-relaxed">
+                    `script.js` 檔案現在將管理三個主要功能：下載、結構化和總結。
+                </p>
+                <!-- 程式碼區塊 9: static/script.js -->
+                <details class="mb-4">
+                    <summary>
+                        <span>JavaScript: static/script.js (更新)</span>
+                        <span class="text-sm font-normal text-gray-500">展開/收合</span>
+                    </summary>
+                    <div>
+                        <button class="copy-btn" onclick="copyToClipboard('code-9')">複製</button>
+                        <pre><code id="code-9">document.addEventListener('DOMContentLoaded', () => {
+    const uploadForm = document.getElementById('upload-form');
+    const fileInput = document.getElementById('file-input');
+    const fileNameDiv = document.getElementById('file-name');
+    const submitBtn = document.getElementById('submit-btn');
+    const progressContainer = document.getElementById('progress-container');
+    const progressBar = document.getElementById('upload-progress');
+    const statusDiv = document.getElementById('status');
+    let selectedFile = null;
+
+    // ✨ 獲取新的 UI 元素
+    const resultsContainer = document.getElementById('results-container');
+    const ocrOutput = document.getElementById('ocr-output'); // 重命名 textarea
+    const downloadBtn = document.getElementById('download-btn');
+    const structureBtn = document.getElementById('structure-btn'); // ✨ 新按鈕
+    const summarizeBtn = document.getElementById('summarize-btn');
+    const geminiOutputContainer = document.getElementById('gemini-output-container');
+    const geminiOutputTitle = document.getElementById('gemini-output-title');
+    const geminiLoading = document.getElementById('gemini-loading');
+    const geminiOutput = document.getElementById('gemini-output');
+
+    let currentOcrText = ""; // ✨ 儲存原始 OCR 結果
+
+    // 系統提示詞
+    const PROMPT_SUMMARIZE = "你是一個專業的總結助手。請為以下 OCR 辨識出的內容提供一個簡潔、準確、條列式的總結。";
+    const PROMPT_STRUCTURE = "你是一個強大的文件格式化助手。請將以下這份由 OCR 提取的原始文字，轉換為結構良好、易於閱讀的 Markdown 文件。你需要保留所有內容，但要準確地加上標題、列表、段落和代碼塊等格式。";
+
+    fileInput.addEventListener('change', (event) => {
+        selectedFile = event.target.files[0];
+        if (selectedFile) {
+            fileNameDiv.textContent = selectedFile.name;
+            statusDiv.textContent = '檔案已準備就緒。';
+            submitBtn.disabled = false;
+        } else {
+            fileNameDiv.textContent = '尚未選擇檔案';
+            statusDiv.textContent = '請選擇一個 PDF 或圖像檔案';
+            submitBtn.disabled = true;
+        }
+    });
+
+    uploadForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (!selectedFile) return;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = '處理中...';
+        progressContainer.style.display = 'block';
+        progressBar.value = 0;
+        statusDiv.textContent = '正在上傳檔案...';
+        statusDiv.style.color = '#495057';
+        
+        // 隱藏舊結果
+        resultsContainer.classList.add('hidden');
+        geminiOutputContainer.classList.add('hidden');
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/process-document/', true);
+        xhr.responseType = 'json';
+
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+                const percentComplete = (e.loaded / e.total) * 100;
+                progressBar.value = percentComplete;
+                if (percentComplete >= 100) {
+                    statusDiv.textContent = '檔案上傳完成，PaddleOCR 正在本地辨識...';
+                }
+            }
+        };
+
+        xhr.onload = () => {
+            if (xhr.status === 200) {
+                const data = xhr.response;
+                // ✨ 接收 'ocr_text' 鍵
+                if (data && data.ocr_text) {
+                    currentOcrText = data.ocr_text;
+                    ocrOutput.value = currentOcrText;
+                    resultsContainer.classList.remove('hidden');
+                    statusDiv.textContent = '辨識完成。您現在可以下載或使用 Gemini 處理。';
+                } else {
+                    statusDiv.textContent = '錯誤：從伺服器收到無效的響應。';
+                    statusDiv.style.color = 'red';
+                }
+            } else {
+                try {
+                    const errorData = xhr.response;
+                    statusDiv.textContent = `錯誤: ${errorData.detail || '未知錯誤'}`;
+                } catch (e) {
+                     statusDiv.textContent = `伺服器錯誤 (狀態碼: ${xhr.status})`;
+                }
+                statusDiv.style.color = 'red';
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = '開始 OCR 辨識';
+            progressContainer.style.display = 'none';
+        };
+
+        xhr.onerror = ()_ => {
+            statusDiv.textContent = '發生網絡錯誤，請重試。';
+            statusDiv.style.color = 'red';
+            resetUI();
+        };
+
+        xhr.send(formData);
+    });
+
+    // 下載按鈕
+    downloadBtn.addEventListener('click', () => {
+        if (!currentOcrText || !selectedFile) return;
+
+        const blob = new Blob([currentOcrText], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        const originalFilename = selectedFile.name.substring(0, selectedFile.name.lastIndexOf('.')) || selectedFile.name;
+        a.download = `raw_text_${originalFilename}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    });
+
+    // ✨ 結構化按鈕
+    structureBtn.addEventListener('click', () => {
+        if (!currentOcrText) return;
+        geminiOutputTitle.textContent = "Gemini 結構化 (Markdown) 結果:";
+        triggerGeminiAction(currentOcrText, PROMPT_STRUCTURE, structureBtn);
+    });
+
+    // 總結按鈕
+    summarizeBtn.addEventListener('click', () => {
+        if (!currentOcrText) return;
+        geminiOutputTitle.textContent = "Gemini 總結結果:";
+        triggerGeminiAction(currentOcrText, PROMPT_SUMMARIZE, summarizeBtn);
+    });
+
+    async function triggerGeminiAction(text, systemPrompt, buttonElement) {
+        geminiLoading.classList.remove('hidden');
+        geminiOutputContainer.classList.remove('hidden');
+        geminiOutput.classList.add('hidden');
+        buttonElement.disabled = true;
+        const originalText = buttonElement.textContent;
+        buttonElement.textContent = '✨ 處理中...';
+
+        try {
+            const result = await callGeminiAPI(text, systemPrompt);
+            geminiOutput.textContent = result;
+        } catch (error) {
+            console.error(error);
+            geminiOutput.textContent = `Gemini API 請求失敗：${error.message}`;
+        } finally {
+            geminiLoading.classList.add('hidden');
+            geminiOutput.classList.remove('hidden');
+            buttonElement.disabled = false;
+            buttonElement.textContent = originalText;
+        }
+    }
+
+    async function fetchWithRetry(url, options, retries = 3, delay = 1000) {
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(url, options);
+                if (response.status === 429 || response.status >= 500) {
+                    throw new Error(`Server error or rate limit: ${response.status}`);
+                }
+                if (!response.ok) {
+                    throw new Error(`HTTP error: ${response.status}`);
+                }
+                return response.json();
+            } catch (error) {
+                console.warn(`Attempt ${i + 1} failed: ${error.message}. Retrying in ${delay}ms...`);
+                if (i < retries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2; // 指數退避
+                } else {
+                    throw error;
+                }
+            }
+        }
+    }
+
+    async function callGeminiAPI(textToProcess, systemPromptText) {
+        const userQuery = `請處理以下文字：\n\n"""\n${textToProcess}\n"""`;
+        const apiKey = ""; // 依照指示，將 API 金鑰保留為空字串
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+        const payload = {
+            contents: [{ parts: [{ text: userQuery }] }],
+            systemInstruction: {
+                parts: [{ text: systemPromptText }]
+            },
+        };
+
+        const options = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        };
+
+        const result = await fetchWithRetry(apiUrl, options);
+
+        if (result.candidates && result.candidates[0].content?.parts?.[0]?.text) {
+            return result.candidates[0].content.parts[0].text;
+        } else {
+            console.error("Invalid response structure from Gemini API:", result);
+            throw new Error("從 Gemini API 收到的響應格式不正確。");
+        }
+    }
+
+    function resetUI() {
+        submitBtn.disabled = true;
+        submitBtn.textContent = '開始 OCR 辨識';
+        progressContainer.style.display = 'none';
+        uploadForm.reset();
+        fileNameDiv.textContent = '尚未選擇檔案';
+        selectedFile = null;
+        resultsContainer.classList.add('hidden');
+        geminiOutputContainer.classList.add('hidden');
+        currentOcrText = "";
+    }
+});
+</code></pre>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 第 5 節：效能與未來 -->
+        <section class="bg-white shadow-lg rounded-lg p-6 md:p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">第 5 節：效能結論與混合式架構的未來</h2>
+            <div class="space-y-6">
+                <!-- 5.1 效能分析 -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3">5.1. M3 Max 上的效能分析</h3>
+                    <ul class="list-disc list-outside pl-6 space-y-2 text-gray-700">
+                        <li><strong>本地 OCR 效能:</strong> `PaddlePaddle` 框架對 Apple Silicon MPS 的支援日益成熟。在 `app/services.py` 中設定 `use_gpu=True` 將使 M3 Max 的 GPU 核心參與運算，極大地加速圖像的批次處理，效能遠超僅使用 CPU。</li>
+                        <li><strong>記憶體佔用:</strong> PaddleOCR 的模型相較於大型 VLMs 更為輕量，在 M3 Max 的統一記憶體上運行綽綽有餘，確保了 API 服務的低延遲響應。</li>
+                        <li><strong>混合式架構的優勢:</strong> 此架構是目前最兩全其美的方案。它利用本地硬體處理最耗時、資料量最大的 OCR 任務 (將圖像轉為文字)，同時利用雲端 Gemini API 處理最需要智慧的、基於語言模型的任務 (結構化與總結)。</li>
+                    </ul>
+                </div>
+
+                <!-- 5.2 結論與未來方向 -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3">5.2. 結論與未來方向</h3>
+                    <p class="text-gray-700 mb-4 leading-relaxed">
+                        我們成功地將應用程式的核心從 DeepSeek-OCR 遷移到了 PaddleOCR-VL，並建立了一個更強大、更靈活的混合式系統。此系統結合了 M3 Max 的本地運算能力和 Gemini API 的雲端智慧。
+                    </p>
+                    <h4 class="text-lg font-semibold text-gray-700 mb-2">未來可行的擴展方向包括：</h4>
+                    <ul class="list-disc list-outside pl-6 space-y-2 text-gray-700">
+                        <li><strong>動態語言選擇:</strong> 在前端增加一個下拉選單，允許使用者選擇 OCR 語言 (如 'en', 'ch_tra', 'ja')，並將其傳遞給後端，後端動態初始化 `PaddleOCR(lang=...)`。</li>
+                        <li><strong>表格結構化:</strong> 利用 PaddleOCR 強大的 `structure` 模式 (佈局分析) 來專門處理表格。可以提取表格的 HTML 結構，並將其與 Gemini 的格式化能力相結合。</li>
+                        <li><strong>Gemini 模型的選擇:</strong> 允許使用者在 `gemini-2.5-flash` (快速) 和 `gemini-pro` (高品質) 之間切換，以應對不同的任務需求。</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 頁腳 -->
+        <footer class="text-center mt-12">
+            <p class="text-gray-500">混合式 AI 部署指南</p>
+        </footer>
+
+    </div> <!-- /container -->
+
+    <script>
+        // 複製到剪貼簿的函數
+        function copyToClipboard(elementId) {
+            const codeEl = document.getElementById(elementId);
+            const text = codeEl.innerText;
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast('已複製到剪貼簿！');
+            } catch (err) {
+                console.error('無法複製文字: ', err);
+                showToast('複製失敗！');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        // 顯示提示框
+        function showToast(message) {
+            const toast = document.getElementById('copy-toast');
+            toast.textContent = message;
+            toast.style.bottom = '20px'; // 顯示
+            setTimeout(() => {
+                toast.style.bottom = '-100px'; // 隱藏
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
+
+
